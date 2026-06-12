@@ -1,0 +1,89 @@
+<mujoco model="HOPPY_E0_MuJoCo_fixed">
+  <compiler angle="radian" meshdir="../assets/meshes" balanceinertia="true" autolimits="true" discardvisual="false"/>
+  <option timestep="0.001" gravity="0 0 -9.81" integrator="RK4" solver="Newton" iterations="50" tolerance="1e-8"/>
+  <size njmax="2000" nconmax="500"/>
+  <visual>
+    <global offwidth="1280" offheight="960"/>
+  </visual>
+  <default>
+    <joint limited="true" damping="0.01" armature="0.0"/>
+    <geom condim="6" friction="2.5 0.25 0.02" solref="0.0015 1" solimp="0.97 0.995 0.0005" margin="0.0005"/>
+  </default>
+  <asset>
+    <material name="hoppy_white" rgba="0.88 0.88 0.86 1"/>
+    <material name="hoppy_gray" rgba="0.55 0.55 0.55 1"/>
+    <material name="floor_mat" rgba="0.2 0.2 0.2 1"/>
+    <mesh name="base_link" file="base_link.STL"/>
+    <mesh name="Link1" file="Link1.STL"/>
+    <mesh name="Link2" file="Link2.STL"/>
+    <mesh name="Link3" file="Link3.STL"/>
+    <mesh name="Link4" file="Link4.STL"/>
+  </asset>
+  <worldbody>
+    <light name="key_light" pos="0 -2 3" dir="0 1 -1" diffuse="0.8 0.8 0.8"/>
+    <geom name="floor" type="plane" pos="0 0 0" size="4 4 0.02" material="floor_mat" contype="1" conaffinity="6" friction="6.0 1.2 0.20" solref="0.0015 1" solimp="0.97 0.995 0.0005"/>
+
+    <!-- fixed gantry base: visual + hidden collision mesh/proxy -->
+    <geom name="base_link_visual" type="mesh" mesh="base_link" material="hoppy_white" contype="0" conaffinity="0" group="1"/>
+    <geom name="base_link_mesh_collision" type="mesh" mesh="base_link" rgba="0 0.4 1 0" contype="2" conaffinity="1" group="3"/>
+    <geom name="base_collision_proxy" type="box" pos="0 0 0.018" size="0.09 0.10 0.018" rgba="0 0.4 1 0" contype="4" conaffinity="1" group="3"/>
+
+    <body name="Link1" pos="0 0 0.04">
+      <inertial pos="1.19035e-06 -7.23296e-08 0.110977" quat="0.999539 -3.72317e-07 -1.22626e-05 -0.0303481" mass="1.05189" diaginertia="0.0015755 0.00119525 0.000930447"/>
+      <joint name="joint1" pos="0 0 0" axis="0 0 1" limited="false" damping="0.08" stiffness="0" frictionloss="0.002"/>
+      <geom name="Link1_visual" type="mesh" mesh="Link1" material="hoppy_white" contype="0" conaffinity="0" group="1"/>
+      <geom name="Link1_mesh_collision" type="mesh" mesh="Link1" rgba="0 0.4 1 0" contype="2" conaffinity="1" group="3"/>
+      <geom name="tower_collision_proxy" type="capsule" fromto="0 0 0.02 0 0 0.23" size="0.035" rgba="0 0.4 1 0" contype="4" conaffinity="1" group="3"/>
+
+      <body name="Link2" pos="-0.00227444 -0.037431 0.21" quat="0.705252 0.707058 0.00831865 -0.0511876">
+        <inertial pos="-0.513966 0.0016327 -0.00902703" quat="0.500001 0.500001 0.499999 0.499999" mass="1.87654" diaginertia="0.0636508 0.0630427 0.00259304"/>
+        <joint name="joint2" pos="0 0 0" axis="0 0 1" range="-0.5 0.5" damping="0.85" stiffness="0.75" springref="-0.03" frictionloss="0.01"/>
+        <geom name="Link2_visual" type="mesh" mesh="Link2" material="hoppy_white" contype="0" conaffinity="0" group="1"/>
+        <geom name="Link2_mesh_collision" type="mesh" mesh="Link2" rgba="0 0.4 1 0" contype="2" conaffinity="1" group="3"/>
+        <geom name="boom_collision_proxy" type="capsule" fromto="-0.82 0 0 0.39 0 0" size="0.028" rgba="0 0.4 1 0" contype="4" conaffinity="1" group="3"/>
+        <geom name="hip_mount_collision_proxy" type="box" pos="-0.66 0 0.04" size="0.09 0.08 0.06" rgba="0 0.4 1 0" contype="4" conaffinity="1" group="3"/>
+        <geom name="counterweight_collision_proxy" type="box" pos="-0.20 0 -0.02" size="0.16 0.06 0.05" rgba="0 0.4 1 0" contype="4" conaffinity="1" group="3"/>
+
+        <body name="Link3" pos="-0.6585 0 0.0425" quat="0.677009 -0.204104 -0.677009 0.204104">
+          <inertial pos="0.00864428 -0.0327981 0.0561207" quat="0.511267 0.498647 -0.497438 0.492456" mass="0.332207" diaginertia="0.000345397 0.000299821 7.12146e-05"/>
+          <joint name="joint3" pos="0 0 0" axis="0 0 1" range="-0.55 0.60" damping="0.40" frictionloss="0.02" armature="0.00506527"/>
+          <geom name="Link3_visual" type="mesh" mesh="Link3" material="hoppy_white" contype="0" conaffinity="0" group="1"/>
+          <geom name="Link3_mesh_collision" type="mesh" mesh="Link3" rgba="0 0.4 1 0" contype="2" conaffinity="1" group="3"/>
+          <geom name="upper_leg_collision_proxy" type="capsule" fromto="0 0.02 0.03 0 -0.12 0.08" size="0.025" rgba="0 0.4 1 0" contype="4" conaffinity="1" group="3"/>
+
+          <body name="Link4" pos="0 -0.1 0.0095" quat="0 -0.288647 -0.957436 0">
+            <inertial pos="-0.0162703 -0.0747425 -0.0260399" quat="0.285014 0.647037 -0.285746 0.646884" mass="0.172793" diaginertia="0.000170791 0.000165707 3.2109e-05"/>
+            <joint name="joint4" pos="0 0 0" axis="0 0 -1" range="-0.50 0.22" damping="1.00" frictionloss="0.02" armature="0.00580608" stiffness="0.0484" springref="0.4462809917"/>
+            <geom name="Link4_visual" type="mesh" mesh="Link4" material="hoppy_gray" contype="0" conaffinity="0" group="1"/>
+            <geom name="Link4_mesh_collision" type="mesh" mesh="Link4" rgba="0 0.4 1 0" contype="2" conaffinity="1" group="3"/>
+            <geom name="lower_leg_collision_proxy" type="capsule" fromto="0 0.01 0.03 -0.002 0.014 0.13" size="0.02" rgba="0 0.4 1 0" contype="4" conaffinity="1" group="3"/>
+            <geom name="foot_contact" type="box" pos="0.02295 -0.18500 -0.02753" size="0.035 0.006 0.016" rgba="0.1 0.1 0.1 0" contype="4" conaffinity="1" group="3" condim="6" friction="8.0 1.5 0.30" solref="0.001 1" solimp="0.98 0.995 0.0005"/>
+            <site name="toe_site" pos="0.02295 -0.18500 -0.02753" type="sphere" size="0.008" rgba="1 0 0 0"/>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+  <contact>
+    <exclude body1="Link1" body2="Link2"/>
+    <exclude body1="Link2" body2="Link3"/>
+    <exclude body1="Link3" body2="Link4"/>
+  </contact>
+  <actuator>
+    <motor name="hip_motor" joint="joint3" gear="1" ctrllimited="true" ctrlrange="-20.0 20.0"/>
+    <motor name="knee_motor" joint="joint4" gear="1" ctrllimited="true" ctrlrange="-20.0 20.0"/>
+  </actuator>
+  <sensor>
+    <jointpos name="joint1_pos" joint="joint1"/>
+    <jointvel name="joint1_vel" joint="joint1"/>
+    <jointpos name="joint2_pos" joint="joint2"/>
+    <jointvel name="joint2_vel" joint="joint2"/>
+    <jointpos name="joint3_pos" joint="joint3"/>
+    <jointvel name="joint3_vel" joint="joint3"/>
+    <jointpos name="joint4_pos" joint="joint4"/>
+    <jointvel name="joint4_vel" joint="joint4"/>
+    <touch name="toe_touch" site="toe_site"/>
+    <actuatorfrc name="hip_tau_sensor" actuator="hip_motor"/>
+    <actuatorfrc name="knee_tau_sensor" actuator="knee_motor"/>
+  </sensor>
+</mujoco>
