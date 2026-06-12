@@ -20,12 +20,10 @@ class ControllerLog:
 
 
 class HoppyHybridController:
-    """Hybrid FLIGHT/STANCE controller for HOPPY in MuJoCo.
-
-    The controller commands only hip and knee torques.  Yaw and pitch stay
-    passive, as in the physical boom rig.  Forward circular motion is generated
-    by a tangential ground-reaction force during STANCE; the yaw joint is not
-    motorized.
+    """
+    controlador principal de HOPPY — alterna entre FLIGHT y STANCE
+    solo mueve hip y knee, el yaw y pitch son pasivos igual que en el rig fisico
+    el avance circular sale de empujar tangencialmente en STANCE, no de un motor en el yaw
     """
 
     def __init__(self, model, *, torque_saturation: bool = True):
@@ -87,11 +85,8 @@ class HoppyHybridController:
         return jacp @ qvel_est_full
 
     def circle_basis(self, data) -> tuple[np.ndarray, np.ndarray, float]:
-        """Return radial/tangential unit vectors in the floor plane.
-
-        The radial vector is taken from the yaw axis to the real toe contact.
-        The tangential vector is the direction of positive circular progress.
-        """
+        # vectores radial y tangencial en el plano del suelo
+        # el radial apunta del eje de yaw al pie, el tangencial es hacia donde avanza
         toe_xy = data.site_xpos[self.toe_site_id][:2].copy()
         radius = float(np.linalg.norm(toe_xy))
         if radius < 1.0e-6:
@@ -172,9 +167,8 @@ class HoppyHybridController:
             + touchdown_blend * P.FLIGHT_TOUCHDOWN_RADIAL_OFFSET
         )
 
-        # Drive a real swing arc in flight: early flight lifts the foot for
-        # clearance, late flight reduces the lead so touchdown happens under a
-        # compact leg instead of with the foot stranded forward.
+        # primero levanta el pie para no arrastrarlo, luego lo lleva adelante
+        # al final del vuelo lo recoge un poco para que caiga debajo de la cadera y no estirado
         desired_pos = (
             hip_pos
             + radial_offset * radial
@@ -198,9 +192,8 @@ class HoppyHybridController:
 
         fz = bezier_value(P.FZ_BEZIER, s)
 
-        # Tangential GRF: this is what makes the passive yaw joint advance in a
-        # circle.  It is strongest in the middle of STANCE and goes to zero at
-        # touchdown/lift-off to avoid kicking the foot sideways.
+        # esto es lo que hace que el yaw avance — fuerza tangencial al suelo
+        # va en forma de seno para no patear el piso al entrar ni al salir
         yaw_rate = float(qd_est[0])
         desired_tangential_speed = P.TARGET_YAW_RATE * radius
         current_tangential_speed = P.CIRCLE_DIRECTION * yaw_rate * radius
@@ -208,8 +201,8 @@ class HoppyHybridController:
         ftan = (P.TANGENTIAL_FORCE_FF + P.KP_YAW_VEL * (desired_tangential_speed - current_tangential_speed)) * envelope
         ftan = float(np.clip(ftan, -P.MAX_TANGENTIAL_FORCE, P.MAX_TANGENTIAL_FORCE))
 
-        # Keep only a light radial correction so tangential propulsion still
-        # reaches the boom instead of being spent fighting contact slip.
+        # correccion radial suave para que el pie no se deslice pa los lados
+        # si se pone muy fuerte compite con la fuerza tangencial y se frena solo
         toe_pos = data.site_xpos[self.toe_site_id].copy()
         toe_xy = toe_pos[:2]
         toe_vel = self.toe_velocity_xyz(data, qd_est)
@@ -218,8 +211,8 @@ class HoppyHybridController:
         frad = -P.KP_FOOT_HOLD_RADIAL * radial_error - P.KD_FOOT_HOLD_RADIAL * radial_speed
         frad = float(np.clip(frad, -P.MAX_FOOT_HOLD_RADIAL_FORCE, P.MAX_FOOT_HOLD_RADIAL_FORCE))
 
-        # If the leg compresses too far, add a soft upward support so the body
-        # does not sink into an over-flat stance before takeoff.
+        # si la pierna se aplasta demasiado le metemos un poco de fuerza hacia arriba
+        # para que no quede plana contra el suelo antes de despegar
         height_error = max(0.0, P.STANCE_TOE_Z_SOFT_MIN - float(toe_pos[2]))
         downward_speed = max(0.0, -float(toe_vel[2]))
         fz_guard = P.KP_STANCE_HEIGHT * height_error + P.KD_STANCE_HEIGHT * downward_speed
@@ -230,8 +223,8 @@ class HoppyHybridController:
 
         q_leg = q[2:4]
         qd_leg = qd_est[2:4]
-        # Moderate extension in mid-stance, then a real late retraction to
-        # prepare the next touchdown instead of leaving the leg wide open.
+        # extiende en medio de la zancada y retrae al final
+        # asi el pie llega bien posicionado al proximo touchdown en vez de quedar abierto
         pulse = np.sin(np.pi * min(1.0, s))
         late_retract = 0.5 - 0.5 * np.cos(np.pi * np.clip((s - 0.74) / 0.26, 0.0, 1.0))
         q_des = P.Q_D_STANCE + pulse * (P.Q_D_PUSH - P.Q_D_STANCE)

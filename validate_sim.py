@@ -83,7 +83,7 @@ def main() -> None:
     print(f"loaded stance foot slip 2D: mean {mean_loaded_slip:.4f} m / max {max_loaded_slip:.4f} m")
 
     min_laps = 0.50 if args.duration >= 20.0 else 0.10
-    max_transitions = int(args.duration * 10.0)  # avoids the tiny rapid-hop/chattering behavior
+    max_transitions = int(args.duration * 10.0)  # si hay mas de esto es que esta chateando rapido
     checks = [
         (transitions >= 20, "has repeated FLIGHT/STANCE transitions"),
         (transitions <= max_transitions, "does not chatter with tiny ultra-fast hops"),

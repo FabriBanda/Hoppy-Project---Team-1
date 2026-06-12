@@ -4,10 +4,9 @@ import numpy as np
 
 
 class EncoderVelocityEstimator:
-    """Estimate joint velocity from quantized joint positions.
-
-    This avoids using perfect qvel directly in the main controller, matching the
-    sensor-emulation requirement from the rubric.
+    """
+    estima velocidad de cada junta a partir de posicion cuantizada del encoder
+    no usamos qvel directo de mujoco — simulamos como funciona el sensor real
     """
 
     def __init__(self, dt: float, n: int, quantization: float, alpha: float):

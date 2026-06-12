@@ -5,7 +5,7 @@ import numpy as np
 
 
 def bezier_value(coefficients: np.ndarray, s: float) -> float:
-    """Evaluate a Bezier curve with the same convention used in MATLAB polyval_bz."""
+    """evalua la curva de Bezier — misma convencion que polyval_bz en el MATLAB original"""
     c = np.asarray(coefficients, dtype=float)
     s = float(np.clip(s, 0.0, 1.0))
     n = len(c) - 1

@@ -128,6 +128,26 @@ python simulate.py --no-armature --no-damping --no-knee-spring --output-prefix n
 
 ---
 
+## Controller types
+
+The project implements and compares several control strategies for the hopping behavior:
+
+### 1. Hybrid FLIGHT/STANCE (main controller)
+The one actually running in `simulate.py`. Two sub-controllers that hand off to each other based on contact force:
+- **FLIGHT sub-controller** — Cartesian impedance on the toe position. Lifts the foot early in flight, swings it forward, then pulls it back right before touchdown so it lands under the hip instead of way out front
+- **STANCE sub-controller** — Jacobian-transpose force control. Pushes up with a Bézier-shaped vertical GRF and tangentially to drive yaw progress. A radial correction keeps the foot from sliding sideways
+
+### 2. Feed-forward only (baseline)
+Removing the feedback terms (`KP_YAW_VEL = 0`, `KP_ST` zeroed) gives a pure feed-forward stance. Useful for seeing how far the robot gets without any error correction — it tends to drift in radius and eventually loses rhythm
+
+### 3. No torque saturation
+Running with `--no-torque-saturation` removes the motor limits. The robot hops higher and faster but the torques are physically unrealistic — good for finding the theoretical ceiling of the trajectory
+
+### 4. Physical effects disabled
+Flags like `--no-armature`, `--no-damping`, and `--no-knee-spring` strip out the rotor inertia, back-EMF damping, and passive knee spring one by one. Each one changes how snappy the leg responds and lets you see which physical effect matters most for stability
+
+---
+
 ## How the controller works
 
 The state machine is simple: the robot starts in FLIGHT. It switches to STANCE when the normal contact force exceeds 0.5 N (after a minimum flight time). It switches back to FLIGHT when the force drops below 0.25 N or the stance time exceeds the maximum.
