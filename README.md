@@ -16,6 +16,12 @@ The controller handles:
 
 ---
 
+## Simulation viewer
+
+![MuJoCo viewer](results/mujoco_viewer.png)
+
+---
+
 ## Results
 
 ### Circular path (top view)
