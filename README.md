@@ -1,79 +1,133 @@
-# HOPPY MuJoCo - circle hop fixed
+# HOPPY — MuJoCo Simulation (Team 1)
 
-Esta versión mantiene la postura correcta del HOPPY, pero ahora el robot **sí avanza alrededor del boom** en vez de quedarse rebotando en el mismo lugar.
+A MuJoCo-based simulation of the HOPPY single-legged hopping robot mounted on a boom gantry. The robot hops in a circle around the yaw axis using only hip and knee motors — the yaw joint stays passive the whole time.
 
-Cambios importantes:
+---
 
-- `joint1` yaw ya no está limitado a `[-0.20, 0.20]`, por eso puede dar vueltas completas.
-- El yaw sigue siendo pasivo: no se agregó motor al gantry.
-- El avance circular se genera con fuerza tangencial durante `STANCE` usando los motores de hip/knee.
-- El controlador usa Jacobiano 3D del pie, no solo `x-z`, para que funcione aunque el robot vaya girando.
-- El pie mantiene contacto mediante `foot_contact` con fricción alta y corrección radial suave.
-- La rodilla ya no se deja caer debajo del robot.
-- El salto ya no es tan corto como la versión anterior, pero sigue controlado.
-- Se agregaron gráficas de trayectoria circular en vista superior.
+## What it does
 
-## Cómo correr
+HOPPY uses a hybrid FLIGHT/STANCE controller to generate forward circular motion. During STANCE, the leg pushes tangentially against the ground to spin around the boom. During FLIGHT, the foot swings forward to set up the next touchdown. No yaw motor is needed — the tangential ground reaction force does all the propulsion.
 
-```powershell
-cd hoppy_mujoco_project_circle_hop_fixed
-python validate_sim.py --duration 25
+The controller handles:
+- **Stance:** Bézier-shaped vertical GRF + tangential force feedback + radial foot-hold correction
+- **Flight:** Cartesian impedance control on the toe to clear the ground and pre-position for landing
+- **Torque saturation:** Enforced on both hip and knee based on motor speed limits
+- **Velocity estimation:** Encoder quantization + first-order lowpass filter (no gyro needed)
+
+---
+
+## Results
+
+### Circular path (top view)
+The toe traces a clean arc around the yaw axis at a boom radius of ~556 mm.
+
+![Top-view circular progress](results/circle_test_top_view_path.png)
+
+### Hybrid state machine
+Consistent FLIGHT/STANCE switching throughout the run. Stance duration ~105–175 ms, minimum flight time ~240 ms.
+
+![Hybrid state machine](results/circle_test_states.png)
+
+### Contact force
+Peak normal contact force stabilizes around 80–90 N per hop after the first few cycles.
+
+![Toe-ground contact force](results/circle_test_contact_force.png)
+
+### Control torques
+Both motors stay within the ±20 Nm saturation limit throughout the run.
+
+![Control torques](results/circle_test_torques.png)
+
+---
+
+## Key parameters
+
+All in [`hoppy/params.py`](hoppy/params.py):
+
+| Parameter | Value | Effect |
+|---|---|---|
+| `TARGET_YAW_RATE` | 0.58 rad/s | How fast it goes around the boom |
+| `TANGENTIAL_FORCE_FF` | 78 N | Feed-forward push during stance |
+| `T_STANCE` | 0.122 s | Nominal stance duration |
+| `MIN_FLIGHT_TIME` | 0.24 s | Prevents rapid chatter hops |
+| `CIRCLE_DIRECTION` | -1.0 | Clockwise (-1) or counter-clockwise (+1) |
+| `FZ_BEZIER` | [0, 360, 920, 460, 0] | Vertical GRF profile (5-point Bézier) |
+
+To make it go faster, raise `TARGET_YAW_RATE` or `TANGENTIAL_FORCE_FF` gradually. To make it hop higher, scale up `FZ_BEZIER` — but too much will cause the leg to over-extend.
+
+---
+
+## Setup
+
+```bash
+pip install -r requirements.txt
+```
+
+Requirements: Python 3.10+, MuJoCo ≥ 3.2, NumPy, Matplotlib, Pandas.
+
+---
+
+## Running
+
+Basic simulation (no viewer, saves CSV + plots to `results/`):
+
+```bash
+python simulate.py --duration 6
+```
+
+With the MuJoCo viewer:
+
+```bash
 python simulate.py --duration 25 --viewer
 ```
 
-Para ver las colisiones:
+With the collision debug model:
 
-```powershell
+```bash
 python simulate.py --duration 25 --viewer --xml models/hoppy_collision_debug.xml
 ```
 
-## Parámetros importantes
+Run validation checks (checks hop timing and yaw progress):
 
-Los parámetros que controlan el avance están en `hoppy/params.py`:
-
-```python
-TARGET_YAW_RATE = 0.38
-TANGENTIAL_FORCE_FF = 55.0
-KP_YAW_VEL = 135.0
-MAX_TANGENTIAL_FORCE = 170.0
-```
-
-Si quieres que avance más rápido en círculo, sube poco a poco `TARGET_YAW_RATE` o `TANGENTIAL_FORCE_FF`.
-
-Si quieres que salte más alto, sube `FZ_BEZIER` con cuidado. Si lo subes demasiado, la pierna puede volver a doblarse raro o perder contacto.
-
-
-## Long circle-hop tuning
-
-This version was retuned to avoid the previous tiny, rapid hop chatter. The hybrid controller now enforces a minimum flight time and a longer stance profile, so the robot produces a slower, more visible hop while continuing to advance around the boom.
-
-Key values are in `hoppy/params.py`:
-
-- `T_STANCE = 0.150`
-- `MIN_STANCE_TIME = 0.095`
-- `MIN_FLIGHT_TIME = 0.180`
-- larger vertical GRF profile in `FZ_BEZIER`
-- longer flight foot clearance in `FOOT_CLEARANCE_FROM_HIP`
-
-Run:
-
-```powershell
+```bash
 python validate_sim.py --duration 25
-python simulate.py --duration 25 --viewer
 ```
 
+Disable specific physical effects for comparison runs:
 
-## Reverse circular direction update
-
-This version is tuned to hop in the opposite circular direction. The main changes are in `hoppy/params.py` and `hoppy/controller.py`:
-
-- `CIRCLE_DIRECTION = -1.0`
-- a small `YAW_GUIDE` term is applied to the passive yaw DOF only to choose clockwise/counter-clockwise direction while the leg hopping is still handled by the hip and knee controller.
-- the long-hop timing from the previous version is preserved, so it should not return to tiny rapid hops.
-
-Run:
-
-```powershell
-python validate_sim.py --duration 25
-python simulate.py --duration 25 --viewer
+```bash
+python simulate.py --no-armature --no-damping --no-knee-spring --output-prefix no_dynamics
 ```
+
+---
+
+## Project structure
+
+```
+.
+├── hoppy/
+│   ├── controller.py     # HoppyHybridController (FLIGHT + STANCE)
+│   ├── params.py         # All tuning parameters
+│   ├── bezier.py         # Bézier curve evaluation for GRF shaping
+│   ├── filters.py        # Encoder quantization + velocity estimator
+│   └── mjcf_utils.py     # XML path helpers and override utilities
+├── models/
+│   ├── hoppy.xml                    # Main MJCF model
+│   └── hoppy_collision_debug.xml    # Collision geometry visualization
+├── simulate.py           # Entry point — runs sim and saves results
+├── validate_sim.py       # Checks that hop timing and yaw progress are sane
+├── plot_results.py       # Generates all plots from a simulation CSV
+└── results/              # Auto-generated CSVs and plots
+```
+
+---
+
+## How the controller works
+
+The state machine is simple: the robot starts in FLIGHT. It switches to STANCE when the normal contact force exceeds 0.5 N (after a minimum flight time). It switches back to FLIGHT when the force drops below 0.25 N or the stance time exceeds the maximum.
+
+In **STANCE**, the controller computes a desired 3D foot force (vertical Bézier + tangential propulsion + radial correction) and maps it to joint torques via the foot Jacobian transpose. A position feedback loop on hip/knee keeps the leg from collapsing mid-stance.
+
+In **FLIGHT**, the controller runs a Cartesian impedance law on the toe position to lift the foot during early flight and bring it forward and down for the next touchdown. A postural term keeps hip/knee in a compact configuration.
+
+A small passive guide torque on the yaw DOF biases the direction of rotation without replacing the locomotion generated by the leg.
