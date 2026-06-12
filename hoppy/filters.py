@@ -26,7 +26,7 @@ class EncoderVelocityEstimator:
         if self.prev_q is None:
             self.prev_q = q_meas.copy()
             return self.filtered.copy()
-        raw = (q_meas - self.prev_q) / self.dt
+        raw = (q_meas - self.prev_q) / self.dt  # diferencia finita cruda antes del filtro
         self.filtered = self.alpha * raw + (1.0 - self.alpha) * self.filtered
         self.prev_q = q_meas.copy()
         return self.filtered.copy()
