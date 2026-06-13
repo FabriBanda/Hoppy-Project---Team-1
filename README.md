@@ -1,5 +1,9 @@
 # HOPPY — MuJoCo Simulation (Team 1)
 
+📊 **[Ver presentación del proyecto](https://drive.google.com/file/d/1OtBbRgVYLBXEHcwNGiPWblfCNJYttldu/view?usp=share_link)**
+
+---
+
 A MuJoCo-based simulation of the HOPPY single-legged hopping robot mounted on a boom gantry. The robot hops in a circle around the yaw axis using only hip and knee motors — the yaw joint stays passive the whole time.
 
 ---
