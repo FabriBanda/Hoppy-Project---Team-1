@@ -1,6 +1,6 @@
 # HOPPY — MuJoCo Simulation (Team 1)
 
-📊 **[Ver presentación del proyecto](https://drive.google.com/file/d/1OtBbRgVYLBXEHcwNGiPWblfCNJYttldu/view?usp=share_link)**
+ **[Ver presentación del proyecto](https://drive.google.com/file/d/1OtBbRgVYLBXEHcwNGiPWblfCNJYttldu/view?usp=share_link)**
 
 ---
 
